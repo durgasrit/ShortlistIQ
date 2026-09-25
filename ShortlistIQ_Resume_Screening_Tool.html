@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShortlistIQ — Smarter Resume Screening. Faster Shortlisting.</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs" type="module"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+<style>
+:root { --bg:#f5f7fb; --card:#fff; --text:#172033; --muted:#687386; --line:#dfe4ec; --accent:#315efb; --good:#16834b; --warn:#b7791f; --bad:#c53030; }
+*{box-sizing:border-box} body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+header{background:#111827;color:white;padding:24px 5%;} header h1{margin:0 0 2px;font-size:28px} .tagline{margin:0 0 6px;font-size:16px;font-weight:700;color:#fff} header p{margin:0;color:#cbd5e1}
+main{max-width:1400px;margin:24px auto;padding:0 20px}.grid{display:grid;grid-template-columns:380px 1fr;gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 3px 14px #1720330b}
+label{font-weight:650;font-size:13px;display:block;margin:14px 0 7px} textarea,input[type=number]{width:100%;border:1px solid var(--line);border-radius:9px;padding:11px;font:inherit} textarea{min-height:120px;resize:vertical}
+.drop{border:2px dashed #aeb8ca;border-radius:12px;padding:25px;text-align:center;background:#fafbff;cursor:pointer}.drop.drag{border-color:var(--accent);background:#eef3ff}
+button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer;background:var(--accent);color:#fff}button.secondary{background:#e9edf5;color:#253044}button:disabled{opacity:.5;cursor:not-allowed}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.hint{font-size:12px;color:var(--muted);line-height:1.45}.status{margin-top:12px;font-size:13px;color:var(--muted)}
+.summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}.metric{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 18px;min-width:140px}.metric b{display:block;font-size:22px}.metric span{font-size:12px;color:var(--muted)}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{width:100%;border-collapse:collapse;min-width:1050px}th,td{padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;font-size:13px;vertical-align:top}th{background:#f8f9fc;position:sticky;top:0;z-index:1}.score{font-weight:800}.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}.high{background:#e5f7ed;color:var(--good)}.mid{background:#fff5dc;color:var(--warn)}.low{background:#fde8e8;color:var(--bad)}
+progress{width:90px;height:8px}.empty{text-align:center;padding:45px;color:var(--muted)}
+.small-input{width:75px!important}.criteria{display:grid;grid-template-columns:1fr 75px;gap:8px;align-items:center;margin:7px 0}.criteria input{width:100%;padding:8px}
+
+.question-actions{display:flex;gap:8px;margin:10px 0}.questions{display:flex;flex-direction:column;gap:9px}.question-row{display:grid;grid-template-columns:1fr 32px;gap:7px;align-items:start}.question-row textarea{min-height:66px}.question-row button{padding:7px 9px;background:#eef2f7;color:#263142}.empty-question{font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:9px;padding:12px}.followup-card{margin-top:20px}.followup-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:12px}.candidate-banner{display:flex;justify-content:space-between;gap:15px;flex-wrap:wrap;background:#f8f9fc;border:1px solid var(--line);padding:14px;border-radius:10px;margin-bottom:14px}.qa-row{border:1px solid var(--line);border-radius:10px;padding:12px;margin:10px 0}.qa-row textarea{min-height:75px}.qa-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.qa-controls select,.qa-controls input{border:1px solid var(--line);border-radius:8px;padding:8px}.screen-link{background:transparent;color:var(--accent);padding:4px 6px}.screen-link:hover{text-decoration:underline}.saved{font-size:11px;color:var(--good);font-weight:700}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ShortlistIQ</h1><p class="tagline">Smarter Resume Screening. Faster Shortlisting.</p>
+  <p>Smart resume screening, JD-based questions, candidate scoring, and recruiter-ready exports.</p>
+</header>
+
+<main>
+<div class="grid">
+<section class="card">
+  <h2>1. Screening setup</h2>
+  <label for="jobTitle">Job title</label>
+  <input id="jobTitle" placeholder="e.g. Financial Analyst">
+
+  <label for="jobDescription">Job description / requirements</label>
+  <textarea id="jobDescription" placeholder="Paste the job description or list required skills, education, experience, certifications, etc."></textarea>
+
+  <label>Scoring weights (%)</label>
+  <div class="criteria"><span>Skills match</span><input id="wSkills" type="number" min="0" value="40"></div>
+  <div class="criteria"><span>Experience match</span><input id="wExp" type="number" min="0" value="25"></div>
+  <div class="criteria"><span>Education match</span><input id="wEdu" type="number" min="0" value="15"></div>
+  <div class="criteria"><span>Keyword match</span><input id="wKeywords" type="number" min="0" value="20"></div>
+  <div class="hint">Weights are normalized automatically if they do not total 100.</div>
+
+  <label>JD-based screening questions</label>
+  <div class="question-actions">
+    <button id="generateQuestionsBtn" type="button">Generate from JD</button>
+    <button id="addQuestionBtn" class="secondary" type="button">+ Add question</button>
+  </div>
+  <div id="questions" class="questions">
+    <div class="empty-question">Paste a job description and click “Generate from JD”. You can edit or add questions before screening.</div>
+  </div>
+  <div class="hint">The tool creates basic questions around required skills, experience, education and job-specific keywords. Questions can be edited manually.</div>
+
+  <label>Resume files</label>
+  <div id="drop" class="drop">
+    <strong>Drop PDF/DOCX files here</strong><br>
+    <span class="hint">or click to choose 20+ resumes at once</span>
+    <input id="files" type="file" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document" multiple hidden>
+  </div>
+
+  <div class="actions">
+    <button id="screenBtn">Screen resumes</button>
+    <button id="clearBtn" class="secondary">Clear</button>
+    <button id="exportBtn" class="secondary" disabled>Export CSV</button>
+  </div>
+  <div id="status" class="status">No resumes loaded.</div>
+  <p class="hint"><b>Privacy:</b> This prototype processes files in your browser. It does not upload resumes to a server. External PDF/DOCX libraries are loaded from CDNs.</p>
+</section>
+
+<section>
+  <div class="summary">
+    <div class="metric"><b id="count">0</b><span>Resumes</span></div>
+    <div class="metric"><b id="avg">0</b><span>Average score</span></div>
+    <div class="metric"><b id="qualified">0</b><span>Score ≥ 70</span></div>
+  </div>
+  <div class="card">
+    <h2>2. Candidate score matrix</h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>Candidate</th><th>Email</th><th>Phone</th><th>Location</th>
+          <th>Skills</th><th>Experience</th><th>Education</th><th>Keywords</th><th>Total</th><th>Screening</th><th>File</th>
+        </tr></thead>
+        <tbody id="tbody"><tr><td colspan="12" class="empty">Upload resumes and click “Screen resumes”.</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card followup-card" id="screeningCard" hidden>
+    <div class="followup-head">
+      <div>
+        <h2>3. Candidate screening</h2>
+        <div class="hint">Select a candidate, ask the JD-based questions, and record the response/decision.</div>
+      </div>
+      <button id="closeScreeningBtn" class="secondary" type="button">Close</button>
+    </div>
+    <div id="candidatePanel"></div>
+  </div>
+</section>
+</div>
+</main>
+
+<script type="module">
+import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+
+const $ = id => document.getElementById(id);
+let files = [], results = [], screeningQuestions = [], selectedCandidateIndex = null;
+
+$("drop").onclick = () => $("files").click();
+$("files").onchange = e => addFiles([...e.target.files]);
+["dragenter","dragover"].forEach(ev => $("drop").addEventListener(ev,e=>{e.preventDefault();$("drop").classList.add("drag")}));
+["dragleave","drop"].forEach(ev => $("drop").addEventListener(ev,e=>{e.preventDefault();$("drop").classList.remove("drag")}));
+$("drop").addEventListener("drop", e => addFiles([...e.dataTransfer.files]));
+$("clearBtn").onclick = () => { files=[]; results=[]; screeningQuestions=[]; selectedCandidateIndex=null; $("files").value=""; renderQuestions(); render(); closeScreening(); setStatus("Cleared."); };
+$("screenBtn").onclick = screenAll;
+$("exportBtn").onclick = exportCSV;
+$("generateQuestionsBtn").onclick = () => { screeningQuestions = generateQuestions($("jobDescription").value); renderQuestions(); };
+$("addQuestionBtn").onclick = () => { screeningQuestions.push({question:"", source:"Custom", type:"Open"}); renderQuestions(); };
+$("closeScreeningBtn").onclick = closeScreening;
+
+function addFiles(newFiles){
+  const valid = newFiles.filter(f => /\.(pdf|docx)$/i.test(f.name));
+  files = [...files, ...valid].filter((f,i,a)=>a.findIndex(x=>x.name===f.name && x.size===f.size)===i);
+  setStatus(`${files.length} resume(s) ready. PDF/DOCX supported.`);
+}
+function setStatus(s){$("status").textContent=s}
+
+async function pdfText(file){
+  const data = new Uint8Array(await file.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument({data}).promise;
+  let out=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const content=await page.getTextContent();
+    out.push(content.items.map(x=>x.str).join(" "));
+  }
+  return out.join("\n");
+}
+async function docxText(file){
+  const ab=await file.arrayBuffer();
+  const r=await mammoth.extractRawText({arrayBuffer:ab});
+  return r.value || "";
+}
+async function extractText(file){
+  return /\.pdf$/i.test(file.name) ? pdfText(file) : docxText(file);
+}
+
+function clean(s){return (s||"").replace(/\s+/g," ").trim()}
+function email(text){return (text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig)||[])[0]||""}
+function phone(text){return (text.match(/(?:\+?\d[\d\s().-]{7,}\d)/g)||[]).map(x=>x.trim())[0]||""}
+function candidateName(text, file){
+  const lines=text.split(/\n+/).map(clean).filter(Boolean);
+  for(const l of lines.slice(0,12)){
+    if(l.length>=3 && l.length<=60 && /^[A-Za-z][A-Za-z .'-]+$/.test(l) && !/@/.test(l) &&
+      !/resume|curriculum vitae|profile|objective|summary|contact|phone|email/i.test(l)) return l;
+  }
+  return file.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").trim();
+}
+function location(text){
+  const m=text.match(/(?:location|address|city)\s*[:\-]\s*([A-Za-z .,'-]{3,60})/i);
+  return m ? clean(m[1]).split(/(?:email|phone|linkedin|experience|education)/i)[0] : "";
+}
+function termsFromJD(jd){
+  const stop=new Set(("and the for with from this that are you your have has will our into about than then they their using use required preferred responsibilities requirements skills experience years year degree").split(" "));
+  return [...new Set((jd.toLowerCase().match(/[a-z][a-z0-9+#.-]{2,}/g)||[]).filter(x=>!stop.has(x)))];
+}
+function score(text,jd){
+  const t=text.toLowerCase(), terms=termsFromJD(jd);
+  if(!terms.length) return {skills:0,exp:0,edu:0,keywords:0,total:0};
+  const hits=terms.filter(x=>new RegExp("(^|[^a-z0-9])"+escapeRx(x)+"([^a-z0-9]|$)","i").test(t));
+  const keyword=Math.min(100, hits.length/Math.max(1,terms.length)*100);
+  const skillWords=["javascript","typescript","react","angular","vue","node","python","java","sql","excel","power bi","tableau","sap","finance","accounting","recruitment","sales","marketing","communication","leadership","data analysis","machine learning","project management"];
+  const requiredSkills=terms.filter(x=>skillWords.some(s=>s.includes(x)||x.includes(s)));
+  const skillPool=requiredSkills.length?requiredSkills:terms.slice(0,Math.min(12,terms.length));
+  const skillHits=skillPool.filter(x=>t.includes(x)).length;
+  const skills=skillPool.length?skillHits/skillPool.length*100:keyword;
+  const expReq=(jd.match(/(\d+)\s*\+?\s*(?:years?|yrs?)/i)||[])[1];
+  const expYears=(text.match(/(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)/i)||[])[1];
+  let exp=expReq ? Math.min(100,(parseFloat(expYears||0)/parseFloat(expReq))*100) : (/(experience|employment|work history)/i.test(text)?70:30);
+  const eduReq=/(mba|m\.?b\.?a|bachelor|b\.?sc|b\.?com|b\.?e|b\.?tech|master|m\.?com|degree|ph\.?d)/i.test(jd);
+  const eduHit=/(mba|m\.?b\.?a|bachelor|b\.?sc|b\.?com|b\.?e|b\.?tech|master|m\.?com|degree|ph\.?d)/i.test(text);
+  const edu=eduReq ? (eduHit?100:0) : (eduHit?75:40);
+  const w=[+$("wSkills").value||0,+$("wExp").value||0,+$("wEdu").value||0,+$("wKeywords").value||0], sum=w.reduce((a,b)=>a+b,0)||1;
+  const total=(skills*w[0]+exp*w[1]+edu*w[2]+keyword*w[3])/sum;
+  return {skills,exp,edu,keywords:keyword,total};
+}
+
+function generateQuestions(jd){
+  const text=clean(jd), low=text.toLowerCase();
+  const terms=termsFromJD(text);
+  const q=[], used=new Set();
+  const add=(question,source,type="Open")=>{const key=question.toLowerCase();if(!used.has(key)){q.push({question,source,type});used.add(key)}};
+
+  // Core questions for almost every role.
+  add("Please briefly describe your experience most relevant to this role.", "General", "Open");
+  const exp=(text.match(/(\d+)\s*\+?\s*(?:years?|yrs?)/i)||[])[1];
+  if(exp) add(`The JD asks for ${exp}+ year(s) of experience. How many years of directly relevant experience do you have?`, "Experience", "Number");
+  if(/hybrid/i.test(low)) add("Are you comfortable working in the required hybrid work arrangement?", "Work arrangement", "Yes/No");
+  if(/remote|work from home|wfh/i.test(low)) add("Are you comfortable working in the required remote/work-from-home arrangement?", "Work arrangement", "Yes/No");
+  if(/relocat/i.test(low)) add("Are you willing to relocate if the role requires it?", "Location", "Yes/No");
+  if(/shift|night|rotational/i.test(low)) add("Are you comfortable with the shift pattern mentioned in the JD?", "Shift", "Yes/No");
+  if(/travel/i.test(low)) add("Are you comfortable with the travel requirement mentioned in the JD?", "Travel", "Yes/No");
+
+  // Pick useful JD terms while avoiding generic words.
+  const preferred = ["excel","sql","python","java","javascript","typescript","react","angular","node","power bi","tableau","sap","accounting","financial analysis","recruitment","sales","marketing","communication","leadership","data analysis","machine learning","project management"];
+  const chosen = [];
+  for(const x of preferred) if(low.includes(x)) chosen.push(x);
+  for(const x of terms) if(chosen.length<4 && x.length>3 && !/^(responsibil|requirement|candidate|role|company|business|knowledge|ability|strong|good)$/.test(x)) chosen.push(x);
+  [...new Set(chosen)].slice(0,4).forEach(skill => {
+    add(`How have you used ${skill} in a previous role or project? Please give one specific example.`, "JD skill", "Open");
+  });
+
+  if(/mba|m\.?b\.?a|bachelor|b\.?sc|b\.?com|b\.?e|b\.?tech|master|m\.?com|degree|ph\.?d/i.test(text))
+    add("What is your highest relevant educational qualification, and how does it relate to this role?", "Education", "Open");
+  if(/certif|license|licence|certification/i.test(text))
+    add("Which required or preferred certifications do you currently hold?", "Certification", "Open");
+  if(/notice period|joining|join/i.test(text))
+    add("What is your current notice period or earliest joining date?", "Availability", "Open");
+
+  return q.slice(0,10);
+}
+
+function escapeRx(s){return s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}
+function pct(n){return Math.round(n)}
+function badge(n){let c=n>=70?"high":n>=50?"mid":"low";return `<span class="pill ${c}">${pct(n)}</span>`}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+
+function renderQuestions(){
+  const box=$("questions");
+  if(!screeningQuestions.length){box.innerHTML='<div class="empty-question">Paste a job description and click “Generate from JD”.</div>';return}
+  box.innerHTML=screeningQuestions.map((q,i)=>`
+    <div class="question-row">
+      <textarea aria-label="Screening question ${i+1}" data-q="${i}">${esc(q.question)}</textarea>
+      <button type="button" data-remove="${i}" title="Remove">×</button>
+    </div>`).join("");
+  box.querySelectorAll("[data-q]").forEach(el=>el.addEventListener("input",e=>screeningQuestions[+e.target.dataset.q].question=e.target.value));
+  box.querySelectorAll("[data-remove]").forEach(el=>el.addEventListener("click",e=>{screeningQuestions.splice(+e.target.dataset.remove,1);renderQuestions()}));
+}
+
+async function screenAll(){
+  if(!files.length){setStatus("Please upload at least one PDF or DOCX resume.");return}
+  const jd=$("jobDescription").value;
+  if(!screeningQuestions.length) screeningQuestions=generateQuestions(jd);
+  renderQuestions();
+  results=[]; $("screenBtn").disabled=true;
+  for(let i=0;i<files.length;i++){
+    const f=files[i]; setStatus(`Reading ${i+1}/${files.length}: ${f.name}`);
+    try{
+      const text=await extractText(f), s=score(text,jd);
+      results.push({name:candidateName(text,f),email:email(text),phone:phone(text),location:location(text),...s,file:f.name,text,answers:Array(screeningQuestions.length).fill(null)});
+    }catch(err){
+      results.push({name:f.name,email:"",phone:"",location:"",skills:0,exp:0,edu:0,keywords:0,total:0,file:f.name,text:"",answers:Array(screeningQuestions.length).fill(null),error:"Could not read"});
+    }
+  }
+  results.sort((a,b)=>b.total-a.total);
+  render(); setStatus(`Screened ${results.length} resume(s).`);
+  $("screenBtn").disabled=false; $("exportBtn").disabled=!results.length;
+}
+
+function render(){
+  $("count").textContent=results.length;
+  $("avg").textContent=results.length?Math.round(results.reduce((a,b)=>a+b.total,0)/results.length):0;
+  $("qualified").textContent=results.filter(x=>x.total>=70).length;
+  $("tbody").innerHTML=results.length?results.map((r,i)=>`<tr>
+    <td>${i+1}</td><td><b>${esc(r.name)}</b>${r.error?`<div class="hint">${esc(r.error)}</div>`:""}</td>
+    <td>${esc(r.email)}</td><td>${esc(r.phone)}</td><td>${esc(r.location)}</td>
+    <td>${badge(r.skills)}</td><td>${badge(r.exp)}</td><td>${badge(r.edu)}</td><td>${badge(r.keywords)}</td>
+    <td><span class="score">${pct(r.total)}/100</span></td>
+    <td><button class="screen-link" type="button" data-screen="${i}">${screeningSummary(r)}</button></td>
+    <td>${esc(r.file)}</td></tr>`).join("") :
+    `<tr><td colspan="12" class="empty">Upload resumes and click “Screen resumes”.</td></tr>`;
+  $("tbody").querySelectorAll("[data-screen]").forEach(btn=>btn.addEventListener("click",e=>openCandidate(+e.currentTarget.dataset.screen)));
+}
+
+function screeningSummary(r){
+  const done=(r.answers||[]).filter(Boolean).length;
+  if(!screeningQuestions.length) return "No questions";
+  return done===screeningQuestions.length ? '<span class="saved">Complete</span>' : `${done}/${screeningQuestions.length} answered`;
+}
+
+function openCandidate(index){
+  selectedCandidateIndex=index;
+  const r=results[index];
+  const card=$("screeningCard"); card.hidden=false;
+  $("candidatePanel").innerHTML=`
+    <div class="candidate-banner">
+      <div><strong>${esc(r.name)}</strong><div class="hint">${esc(r.email)}${r.phone?` · ${esc(r.phone)}`:""}${r.location?` · ${esc(r.location)}`:""}</div></div>
+      <div><span class="score">${pct(r.total)}/100 resume score</span></div>
+    </div>
+    ${screeningQuestions.map((q,i)=>{
+      const a=r.answers[i]||{answer:"",status:"Not assessed",note:""};
+      return `<div class="qa-row">
+        <strong>Q${i+1}. ${esc(q.question)}</strong>
+        <div class="hint">Source: ${esc(q.source)}</div>
+        <label>Candidate response</label>
+        <textarea data-answer="${i}" placeholder="Enter response or screening notes...">${esc(a.answer||"")}</textarea>
+        <div class="qa-controls">
+          <select data-status="${i}">
+            ${["Not assessed","Pass","Review","Fail"].map(x=>`<option ${x===a.status?"selected":""}>${x}</option>`).join("")}
+          </select>
+          <input data-note="${i}" placeholder="Optional note" value="${esc(a.note||"")}">
+          <button type="button" data-save="${i}">Save answer</button>
+        </div>
+      </div>`;
+    }).join("")}
+    <div class="actions">
+      <button type="button" id="saveAllAnswersBtn">Save all answers</button>
+      <button type="button" class="secondary" id="clearAnswersBtn">Clear answers</button>
+    </div>`;
+  $("candidatePanel").querySelectorAll("[data-save]").forEach(btn=>btn.addEventListener("click",()=>saveAnswer(+btn.dataset.save)));
+  $("saveAllAnswersBtn").onclick=saveAllAnswers;
+  $("clearAnswersBtn").onclick=()=>{r.answers=Array(screeningQuestions.length).fill(null);openCandidate(index);render()};
+  card.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function saveAnswer(i){
+  const r=results[selectedCandidateIndex], panel=$("candidatePanel");
+  r.answers[i]={
+    answer:panel.querySelector(`[data-answer="${i}"]`).value.trim(),
+    status:panel.querySelector(`[data-status="${i}"]`).value,
+    note:panel.querySelector(`[data-note="${i}"]`).value.trim()
+  };
+  render();
+  setStatus(`Saved screening answer Q${i+1} for ${r.name}.`);
+}
+function saveAllAnswers(){
+  for(let i=0;i<screeningQuestions.length;i++) saveAnswer(i);
+  openCandidate(selectedCandidateIndex);
+}
+function closeScreening(){$("screeningCard").hidden=true;selectedCandidateIndex=null}
+
+function exportCSV(){
+  if(!results.length){setStatus("Nothing to export yet.");return}
+  const headers=["Rank","Candidate","Email","Phone","Location","Skills Score","Experience Score","Education Score","Keyword Score","Resume Total Score","Screening Result","File"];
+  screeningQuestions.forEach((q,i)=>{
+    headers.push(`Q${i+1} - ${q.question}`);
+    headers.push(`Q${i+1} Status`);
+    headers.push(`Q${i+1} Note`);
+  });
+  const rows=results.map((r,i)=>{
+    const row=[i+1,r.name,r.email,r.phone,r.location,pct(r.skills),pct(r.exp),pct(r.edu),pct(r.keywords),pct(r.total),screeningResult(r),r.file];
+    screeningQuestions.forEach((q,qi)=>{
+      const a=r.answers?.[qi]||{};
+      row.push(a.answer||"",a.status||"Not assessed",a.note||"");
+    });
+    return row;
+  });
+  const csv=[headers,...rows].map(row=>row.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");
+  const url=URL.createObjectURL(blob);
+  a.href=url; a.download="resume_screening_results.csv"; a.style.display="none";
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url); a.remove()},5000);
+  setStatus("CSV export started.");
+}
+
+function screeningResult(r){
+  const statuses=(r.answers||[]).map(a=>a?.status||"Not assessed");
+  if(!statuses.length || statuses.every(x=>x==="Not assessed")) return "Not assessed";
+  if(statuses.includes("Fail")) return "Fail";
+  if(statuses.includes("Review")) return "Review";
+  return statuses.every(x=>x==="Pass") ? "Pass" : "In progress";
+}
+renderQuestions();
+render();
+</script>
+</body>
+</html>
